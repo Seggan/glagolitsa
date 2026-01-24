@@ -2,6 +2,7 @@ package io.github.seggan.glagolitsa.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,31 +17,49 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedButton
 import androidx.compose.material.Text
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.seggan.glagolitsa.node.Node
-import io.github.seggan.glagolitsa.node.impl.LoadImage
 
 @Composable
-@Preview
 fun NodeView(
-    node: Node = LoadImage(),
-    modifier: Modifier = Modifier
+    node: Node,
+    offset: Offset,
+    scale: Float,
+    onDrag: (Offset) -> Unit = {},
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
+            .graphicsLayer {
+                translationX = offset.x
+                translationY = offset.y
+                scaleX = scale
+                scaleY = scale
+            }
             .background(MaterialTheme.colors.background, RoundedCornerShape(10.dp))
             .width(IntrinsicSize.Max)
             .height(IntrinsicSize.Min)
+            .pointerInput(Unit) {
+                detectDragGestures { change, dragAmount ->
+                    change.consume()
+                    onDrag(dragAmount)
+                }
+            }
     ) {
         val contentPadding = 16.dp
         // Border drawn separately to be below the inner content
