@@ -1,7 +1,7 @@
 package io.github.seggan.glagolitsa.node.impl
 
-import io.github.seggan.glagolitsa.node.Parameter
 import io.github.seggan.glagolitsa.node.Node
+import io.github.seggan.glagolitsa.node.Parameter
 import io.github.seggan.glagolitsa.node.Port
 
 class SaveImageNode : Node {

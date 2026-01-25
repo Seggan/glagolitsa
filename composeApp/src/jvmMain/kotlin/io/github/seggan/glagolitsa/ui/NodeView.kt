@@ -2,35 +2,20 @@ package io.github.seggan.glagolitsa.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -40,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.node.Port
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun NodeView(
     node: Node,
@@ -47,7 +33,7 @@ fun NodeView(
     scale: Float,
     onDrag: (Offset) -> Unit = {},
     onPortDrag: (Port, Offset?) -> Unit = { _, _ -> },
-    onPortDrop: (destPort: Port) -> Unit = {},
+    onRemove: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var size by remember { mutableStateOf(Offset.Zero) }
@@ -56,12 +42,11 @@ fun NodeView(
             .onGloballyPositioned {
                 size = Offset(it.size.width.toFloat(), it.size.height.toFloat())
             }
-            .graphicsLayer {
-                translationX = offset.x - size.x / 2
-                translationY = offset.y - size.y / 2
-                scaleX = scale
-                scaleY = scale
-            }
+            .offset(
+                x = (offset.x - size.x / 2).dp,
+                y = (offset.y - size.y / 2).dp
+            )
+            .scale(scale)
             .background(MaterialTheme.colors.background, RoundedCornerShape(10.dp))
             .width(IntrinsicSize.Max)
             .height(IntrinsicSize.Min)
@@ -72,6 +57,19 @@ fun NodeView(
                 }
             }
     ) {
+        val state = remember { DropdownMenuState() }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .contextMenu(state)
+        ) {
+            DropdownMenu(state) {
+                DropdownMenuItem(
+                    text = { Text("Remove") },
+                    onClick = onRemove
+                )
+            }
+        }
         val contentPadding = 16.dp
         // Border drawn separately to be below the inner content
         Box(
@@ -125,8 +123,7 @@ fun NodeView(
 private fun Port(
     port: Port,
     offset: Dp,
-    onDrag: (Port, Offset?) -> Unit,
-    onDrop: (Port, Offset) -> Unit = { _, _ -> }
+    onDrag: (Port, Offset?) -> Unit
 ) {
     Row(
         modifier = Modifier

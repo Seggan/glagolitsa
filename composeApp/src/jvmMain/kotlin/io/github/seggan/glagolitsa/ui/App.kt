@@ -1,11 +1,16 @@
 package io.github.seggan.glagolitsa.ui
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuState
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -13,22 +18,16 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.onPointerEvent
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.util.fastAll
+import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.node.Port
-import io.github.seggan.glagolitsa.node.impl.LoadImageNode
-import io.github.seggan.glagolitsa.node.impl.SaveImageNode
 
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterialApi::class)
 @Composable
 fun App() = MaterialTheme {
     val nodes = remember {
-        mutableStateMapOf(
-            LoadImageNode() to Offset.Zero,
-            SaveImageNode() to Offset(400f, 400f)
-        )
+        mutableStateMapOf<Node, Offset>()
     }
     var scale by remember { mutableStateOf(1f) }
 
@@ -67,11 +66,46 @@ fun App() = MaterialTheme {
                 }
             }
     ) {
+        val state = remember { DropdownMenuState() }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .contextMenu(state)
+        ) {
+            DropdownMenu(state) {
+                for ((name, constructor) in Node.TYPES) {
+                    DropdownMenuItem(
+                        text = { Text(name) },
+                        onClick = {
+                            val node = constructor()
+                            nodes[node] = (state.status as DropdownMenuState.Status.Open).position
+                            state.status = DropdownMenuState.Status.Closed
+                        }
+                    )
+                }
+            }
+        }
         for ((node, offset) in nodes) {
             NodeView(
                 node = node,
                 offset = offset,
                 scale = scale,
+                onRemove = {
+                    for (port in node.inPorts) {
+                        val connected = port.connectedTo
+                        if (connected != null) {
+                            connected.connectedTo.remove(port)
+                            port.connectedTo = null
+                        }
+                    }
+                    for (port in node.outPorts) {
+                        for (connected in port.connectedTo) {
+                            connected.connectedTo = null
+                        }
+                        port.connectedTo.clear()
+                    }
+                    nodes.remove(node)
+                },
                 onDrag = { dragAmount ->
                     nodes[node] = nodes[node]!! + dragAmount * scale
                 },
@@ -85,11 +119,13 @@ fun App() = MaterialTheme {
                                 if (connected != null) {
                                     connected.connectedTo.remove(input)
                                     input.connectedTo = null
-                                    currentlyConnectingPort = connected to pointerRel * scale + port.worldPosition - connected.worldPosition
+                                    currentlyConnectingPort =
+                                        connected to pointerRel * scale + port.worldPosition - connected.worldPosition
                                     return@onPortDrag
                                 }
                             }
-                            currentlyConnectingPort = input to pointerRel * scale + port.worldPosition - input.worldPosition
+                            currentlyConnectingPort =
+                                input to pointerRel * scale + port.worldPosition - input.worldPosition
                         } else {
                             currentlyConnectingPort = port to pointerRel * scale
                         }
@@ -100,7 +136,8 @@ fun App() = MaterialTheme {
                             val pointerWorld = pointerRel + port.worldPosition
                             for (node in nodes.keys) {
                                 for (destPort in if (port is Port.Input) node.outPorts else node.inPorts) {
-                                    val dist = (destPort.worldPosition + Port.CENTER_OFFSET * scale - pointerWorld).getDistanceSquared()
+                                    val dist =
+                                        (destPort.worldPosition + Port.CENTER_OFFSET * scale - pointerWorld).getDistanceSquared()
                                     if (dist < Port.RADIUS * Port.RADIUS * scale * scale) {
                                         when (port) {
                                             is Port.Input -> {
@@ -165,6 +202,19 @@ fun App() = MaterialTheme {
                     }
                 }
             }
+        }
+    }
+}
+
+fun Modifier.contextMenu(state: DropdownMenuState): Modifier = pointerInput(Unit) {
+    awaitEachGesture {
+        var event: PointerEvent
+        do {
+            event = awaitPointerEvent()
+        } while (!event.changes.fastAll { it.changedToDown() })
+        if (event.buttons.isSecondaryPressed) {
+            event.changes.forEach { it.consume() }
+            state.status = DropdownMenuState.Status.Open(event.changes.first().position)
         }
     }
 }

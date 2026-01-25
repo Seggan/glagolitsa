@@ -1,5 +1,8 @@
 package io.github.seggan.glagolitsa.node
 
+import io.github.seggan.glagolitsa.node.impl.LoadImageNode
+import io.github.seggan.glagolitsa.node.impl.SaveImageNode
+
 interface Node {
     val name: String
 
@@ -11,4 +14,11 @@ interface Node {
 
     val parameters: List<Parameter<*>>
         get() = emptyList()
+
+    companion object {
+        val TYPES = mapOf(
+            "Load Image" to ::LoadImageNode,
+            "Save Image" to ::SaveImageNode
+        )
+    }
 }
