@@ -2,6 +2,7 @@ package io.github.seggan.glagolitsa.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,13 +31,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.layout.positionInWindow
-import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.node.Port
@@ -47,7 +46,8 @@ fun NodeView(
     offset: Offset,
     scale: Float,
     onDrag: (Offset) -> Unit = {},
-    onPortDrag: (port: Port, portOffset: Offset, centerOffset: Offset, pointerRel: Offset?) -> Unit = { _, _, _, _ -> },
+    onPortDrag: (Port, Offset?) -> Unit = { _, _ -> },
+    onPortDrop: (destPort: Port) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var size by remember { mutableStateOf(Offset.Zero) }
@@ -86,8 +86,8 @@ fun NodeView(
         ) {
             Text(node.name, textAlign = TextAlign.Center)
             HorizontalDivider(modifier = Modifier.padding(vertical = 5.dp))
-            for (input in node.inputs) {
-                Row(verticalAlignment = Alignment.CenterVertically) { input.generate() }
+            for (parameter in node.parameters) {
+                Row(verticalAlignment = Alignment.CenterVertically) { parameter.generate() }
             }
             Box {
                 Column(
@@ -96,20 +96,11 @@ fun NodeView(
                     verticalArrangement = Arrangement.SpaceEvenly
                 ) {
                     for (input in node.inPorts) {
-                        Row(
-                            modifier = Modifier
-                                .offset(x = (-7).dp - contentPadding),
-                            horizontalArrangement = Arrangement.Start,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .size(14.dp)
-                                    .background(input.type.color)
-                            )
-                            Text(input.name, modifier = Modifier.padding(2.dp))
-                        }
+                        Port(
+                            port = input,
+                            offset = (-Port.RADIUS).dp - contentPadding,
+                            onDrag = onPortDrag
+                        )
                     }
                 }
                 Column(
@@ -118,46 +109,60 @@ fun NodeView(
                     verticalArrangement = Arrangement.SpaceEvenly
                 ) {
                     for (output in node.outPorts) {
-                        Row(
-                            modifier = Modifier
-                                .offset(x = 7.dp + contentPadding),
-                            horizontalArrangement = Arrangement.End,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(output.name, modifier = Modifier.padding(2.dp))
-
-                            var position by remember { mutableStateOf(Offset.Zero) }
-                            var centerOffset by remember { mutableStateOf(Offset.Zero) }
-                            Box(
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .size(14.dp)
-                                    .background(output.type.color)
-                                    .onGloballyPositioned {
-                                        position = it.positionInRoot()
-                                        centerOffset = Offset(
-                                            it.size.width / 2f,
-                                            it.size.height / 2f
-                                        )
-                                    }
-                                    .pointerInput(Unit) {
-                                        detectDragGestures(
-                                            onDrag = { change, _ ->
-                                                onPortDrag(output, position, centerOffset, change.position)
-                                            },
-                                            onDragEnd = {
-                                                onPortDrag(output, position, centerOffset, null)
-                                            },
-                                            onDragCancel = {
-                                                onPortDrag(output, position, centerOffset, null)
-                                            }
-                                        )
-                                    }
-                            )
-                        }
+                        Port(
+                            port = output,
+                            offset = Port.RADIUS.dp + contentPadding,
+                            onDrag = onPortDrag
+                        )
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun Port(
+    port: Port,
+    offset: Dp,
+    onDrag: (Port, Offset?) -> Unit,
+    onDrop: (Port, Offset) -> Unit = { _, _ -> }
+) {
+    Row(
+        modifier = Modifier
+            .offset(x = offset),
+        horizontalArrangement = if (port is Port.Input) Arrangement.Start else Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (port is Port.Output) {
+            Text(port.name, modifier = Modifier.padding(2.dp))
+        }
+
+        Box(
+            modifier = Modifier
+                .clip(CircleShape)
+                .size((Port.RADIUS * 2).dp)
+                .background(port.type.color)
+                .onGloballyPositioned {
+                    port.worldPosition = it.positionInRoot()
+                }
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDrag = { change, _ ->
+                            onDrag(port, change.position)
+                        },
+                        onDragEnd = {
+                            onDrag(port, null)
+                        },
+                        onDragCancel = {
+                            onDrag(port, null)
+                        }
+                    )
+                }
+        )
+
+        if (port is Port.Input) {
+            Text(port.name, modifier = Modifier.padding(2.dp))
         }
     }
 }

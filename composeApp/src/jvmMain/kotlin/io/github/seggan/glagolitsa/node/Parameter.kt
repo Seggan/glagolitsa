@@ -3,28 +3,25 @@ package io.github.seggan.glagolitsa.node
 import androidx.compose.material.OutlinedButton
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.awt.ComposeWindow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
-import kotlinx.coroutines.withContext
 import java.awt.FileDialog
 import java.awt.Frame
 import java.nio.file.Path
 
-sealed class Input<T>(initialValue: T) {
+sealed class Parameter<T>(initialValue: T) {
 
     var value: T by mutableStateOf(initialValue)
 
     @Composable
     abstract fun generate()
 
-    class File(private vararg val allowedExtensions: String) : Input<Path?>(null) {
+    class File(private vararg val allowedExtensions: String) : Parameter<Path?>(null) {
         @Composable
         override fun generate() {
             val scope = rememberCoroutineScope()

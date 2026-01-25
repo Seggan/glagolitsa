@@ -1,19 +1,12 @@
 package io.github.seggan.glagolitsa.node.impl
 
-import io.github.seggan.glagolitsa.node.Input
+import io.github.seggan.glagolitsa.node.Parameter
 import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.node.Port
 
-class LoadImage : Node {
+class LoadImageNode : Node {
 
     override val name = "Load Image"
-
-    override val inPorts = listOf(
-        Port.Output(
-            name = "Image",
-            type = Port.Type.IMAGE
-        )
-    )
 
     override val outPorts = listOf(
         Port.Output(
@@ -22,7 +15,7 @@ class LoadImage : Node {
         )
     )
 
-    private val fileInput = Input.File(".fit", ".fits")
+    private val fileParameter = Parameter.File(".fit", ".fits")
 
-    override val inputs = listOf(fileInput)
+    override val parameters = listOf(fileParameter)
 }

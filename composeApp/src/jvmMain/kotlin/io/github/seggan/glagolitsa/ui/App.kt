@@ -1,6 +1,7 @@
 package io.github.seggan.glagolitsa.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,28 +12,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.DrawStyle
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.tooling.preview.Preview
-import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.node.Port
-import io.github.seggan.glagolitsa.node.impl.LoadImage
-import kotlin.math.abs
+import io.github.seggan.glagolitsa.node.impl.LoadImageNode
+import io.github.seggan.glagolitsa.node.impl.SaveImageNode
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-@Preview
 fun App() = MaterialTheme {
-    val nodes = remember { mutableStateMapOf<Node, Offset>(LoadImage() to Offset.Zero) }
+    val nodes = remember {
+        mutableStateMapOf(
+            LoadImageNode() to Offset.Zero,
+            SaveImageNode() to Offset(400f, 400f)
+        )
+    }
     var scale by remember { mutableStateOf(1f) }
 
-    data class ConnectingPort(val port: Port, val portOffset: Offset, val pointerPosition: Offset)
-
-    var currentlyConnectingPort by remember { mutableStateOf<ConnectingPort?>(null) }
+    var currentlyConnectingPort by remember { mutableStateOf<Pair<Port, Offset>?>(null) }
 
     Box(
         modifier = Modifier
@@ -63,13 +63,10 @@ fun App() = MaterialTheme {
                         nodes[node] = offset(offset)
                     }
 
-                    currentlyConnectingPort = currentlyConnectingPort?.let { it.copy(portOffset = offset(it.portOffset)) }
-
                     change.consume()
                 }
             }
     ) {
-
         for ((node, offset) in nodes) {
             NodeView(
                 node = node,
@@ -78,11 +75,50 @@ fun App() = MaterialTheme {
                 onDrag = { dragAmount ->
                     nodes[node] = nodes[node]!! + dragAmount * scale
                 },
-                onPortDrag = { port, portOffset, centerOffset, pointerRel ->
+                onPortDrag = onPortDrag@{ port, pointerRel ->
                     if (pointerRel != null) {
-                        currentlyConnectingPort = ConnectingPort(port, portOffset + centerOffset * scale, pointerRel * scale + portOffset)
-                    } else if (currentlyConnectingPort != null) {
-                        currentlyConnectingPort = null
+                        val connecting = currentlyConnectingPort
+                        if (connecting != null) {
+                            val input = connecting.first
+                            if (input is Port.Input) {
+                                val connected = input.connectedTo
+                                if (connected != null) {
+                                    connected.connectedTo.remove(input)
+                                    input.connectedTo = null
+                                    currentlyConnectingPort = connected to pointerRel * scale + port.worldPosition - connected.worldPosition
+                                    return@onPortDrag
+                                }
+                            }
+                            currentlyConnectingPort = input to pointerRel * scale + port.worldPosition - input.worldPosition
+                        } else {
+                            currentlyConnectingPort = port to pointerRel * scale
+                        }
+                    } else {
+                        val connecting = currentlyConnectingPort
+                        if (connecting != null) {
+                            val (port, pointerRel) = connecting
+                            val pointerWorld = pointerRel + port.worldPosition
+                            for (node in nodes.keys) {
+                                for (destPort in if (port is Port.Input) node.outPorts else node.inPorts) {
+                                    val dist = (destPort.worldPosition + Port.CENTER_OFFSET * scale - pointerWorld).getDistanceSquared()
+                                    if (dist < Port.RADIUS * Port.RADIUS * scale * scale) {
+                                        when (port) {
+                                            is Port.Input -> {
+                                                port.connectedTo = destPort as Port.Output
+                                                destPort.connectedTo.add(port)
+                                            }
+
+                                            is Port.Output -> {
+                                                port.connectedTo.add(destPort as Port.Input)
+                                                destPort.connectedTo = port
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            currentlyConnectingPort = null
+                        }
                     }
                 }
             )
@@ -91,21 +127,43 @@ fun App() = MaterialTheme {
         Canvas(
             modifier = Modifier.fillMaxSize()
         ) {
-            val from = currentlyConnectingPort
-            if (from != null) {
+            fun drawBezier(origin: Offset, rel: Offset, color: Color) {
                 val path = Path()
-                val pointerRel = from.pointerPosition - from.portOffset
+                path.moveTo(origin.x, origin.y)
                 path.relativeCubicTo(
-                    pointerRel.x * 0.3f, 0f,
-                    pointerRel.x - pointerRel.x * 0.3f, pointerRel.y,
-                    pointerRel.x, pointerRel.y
+                    rel.x * 0.3f, 0f,
+                    rel.x - rel.x * 0.3f, rel.y,
+                    rel.x, rel.y
                 )
-                path.translate(from.portOffset)
                 drawPath(
                     path = path,
-                    color = Color.Yellow,
+                    color = color,
                     style = Stroke(width = 4f * scale)
                 )
+            }
+
+            val from = currentlyConnectingPort
+            if (from != null) {
+                val (port, pointerRel) = from
+                drawBezier(
+                    origin = port.worldPosition + Port.CENTER_OFFSET * scale,
+                    rel = pointerRel - Port.CENTER_OFFSET * scale,
+                    color = port.type.color
+                )
+            }
+
+            for (node in nodes.keys) {
+                for (output in node.outPorts) {
+                    val outputPos = output.worldPosition + Port.CENTER_OFFSET * scale
+                    for (input in output.connectedTo) {
+                        val inputPos = input.worldPosition + Port.CENTER_OFFSET * scale
+                        drawBezier(
+                            origin = outputPos,
+                            rel = inputPos - outputPos,
+                            color = output.type.color
+                        )
+                    }
+                }
             }
         }
     }
