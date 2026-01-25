@@ -1,7 +1,7 @@
 package io.github.seggan.glagolitsa.ui
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -9,13 +9,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.tooling.preview.Preview
 import io.github.seggan.glagolitsa.node.Node
+import io.github.seggan.glagolitsa.node.Port
 import io.github.seggan.glagolitsa.node.impl.LoadImage
-import kotlin.collections.getValue
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -23,6 +25,10 @@ import kotlin.collections.getValue
 fun App() = MaterialTheme {
     val nodes = remember { mutableStateMapOf<Node, Offset>(LoadImage() to Offset.Zero) }
     var scale by remember { mutableStateOf(1f) }
+
+    data class ConnectingPort(val port: Port, val portOffset: Offset, val pointerPosition: Offset)
+
+    var currentlyConnectingPort by remember { mutableStateOf<ConnectingPort?>(null) }
 
     Box(
         modifier = Modifier
@@ -42,15 +48,24 @@ fun App() = MaterialTheme {
                     val oldScale = scale
                     scale *= scaleFactor
                     val pointerPosition = change.position
-                    for ((node, offset) in nodes) {
-                        val pointerCenteredOffset = pointerPosition - offset
-                        val newOffset = pointerPosition - (pointerCenteredOffset * (scale / oldScale))
-                        nodes[node] = newOffset
+
+                    fun offset(offset: Offset): Offset {
+                        val pointerCenteredOffset = offset - pointerPosition
+                        val newOffset = pointerPosition + pointerCenteredOffset * (scale / oldScale)
+                        return newOffset
                     }
+
+                    for ((node, offset) in nodes) {
+                        nodes[node] = offset(offset)
+                    }
+
+                    //currentlyConnectingPort = currentlyConnectingPort?.let { it.copy(portOffset = offset(it.portOffset)) }
+
                     change.consume()
                 }
             }
     ) {
+
         for ((node, offset) in nodes) {
             NodeView(
                 node = node,
@@ -59,7 +74,28 @@ fun App() = MaterialTheme {
                 onDrag = { dragAmount ->
                     nodes[node] = nodes[node]!! + dragAmount * scale
                 },
+                onPortDrag = { port, portOffset, centerOffset, pointerRel ->
+                    if (pointerRel != null) {
+                        currentlyConnectingPort = ConnectingPort(port, portOffset + centerOffset * scale, pointerRel * scale + portOffset)
+                    } else if (currentlyConnectingPort != null) {
+                        currentlyConnectingPort = null
+                    }
+                }
             )
+        }
+
+        Canvas(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            val from = currentlyConnectingPort
+            if (from != null) {
+                drawLine(
+                    color = Color.Yellow,
+                    strokeWidth = 4f,
+                    start = from.portOffset,
+                    end = from.pointerPosition
+                )
+            }
         }
     }
 }

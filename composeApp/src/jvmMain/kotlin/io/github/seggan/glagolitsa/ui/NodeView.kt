@@ -30,10 +30,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.seggan.glagolitsa.node.Node
+import io.github.seggan.glagolitsa.node.Port
 
 @Composable
 fun NodeView(
@@ -41,13 +47,18 @@ fun NodeView(
     offset: Offset,
     scale: Float,
     onDrag: (Offset) -> Unit = {},
+    onPortDrag: (port: Port, portOffset: Offset, centerOffset: Offset, pointerRel: Offset?) -> Unit = { _, _, _, _ -> },
     modifier: Modifier = Modifier,
 ) {
+    var size by remember { mutableStateOf(Offset.Zero) }
     Box(
         modifier = modifier
+            .onGloballyPositioned {
+                size = Offset(it.size.width.toFloat(), it.size.height.toFloat())
+            }
             .graphicsLayer {
-                translationX = offset.x
-                translationY = offset.y
+                translationX = offset.x - size.x / 2
+                translationY = offset.y - size.y / 2
                 scaleX = scale
                 scaleY = scale
             }
@@ -114,11 +125,34 @@ fun NodeView(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(output.name, modifier = Modifier.padding(2.dp))
+
+                            var position by remember { mutableStateOf(Offset.Zero) }
+                            var centerOffset by remember { mutableStateOf(Offset.Zero) }
                             Box(
                                 modifier = Modifier
                                     .clip(CircleShape)
                                     .size(14.dp)
                                     .background(output.type.color)
+                                    .onGloballyPositioned {
+                                        position = it.positionInRoot()
+                                        centerOffset = Offset(
+                                            it.size.width / 2f,
+                                            it.size.height / 2f
+                                        )
+                                    }
+                                    .pointerInput(Unit) {
+                                        detectDragGestures(
+                                            onDrag = { change, _ ->
+                                                onPortDrag(output, position, centerOffset, change.position)
+                                            },
+                                            onDragEnd = {
+                                                onPortDrag(output, position, centerOffset, null)
+                                            },
+                                            onDragCancel = {
+                                                onPortDrag(output, position, centerOffset, null)
+                                            }
+                                        )
+                                    }
                             )
                         }
                     }
