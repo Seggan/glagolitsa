@@ -10,6 +10,9 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.DrawStyle
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
@@ -18,6 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.node.Port
 import io.github.seggan.glagolitsa.node.impl.LoadImage
+import kotlin.math.abs
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -59,7 +63,7 @@ fun App() = MaterialTheme {
                         nodes[node] = offset(offset)
                     }
 
-                    //currentlyConnectingPort = currentlyConnectingPort?.let { it.copy(portOffset = offset(it.portOffset)) }
+                    currentlyConnectingPort = currentlyConnectingPort?.let { it.copy(portOffset = offset(it.portOffset)) }
 
                     change.consume()
                 }
@@ -89,11 +93,18 @@ fun App() = MaterialTheme {
         ) {
             val from = currentlyConnectingPort
             if (from != null) {
-                drawLine(
+                val path = Path()
+                val pointerRel = from.pointerPosition - from.portOffset
+                path.relativeCubicTo(
+                    pointerRel.x * 0.3f, 0f,
+                    pointerRel.x - pointerRel.x * 0.3f, pointerRel.y,
+                    pointerRel.x, pointerRel.y
+                )
+                path.translate(from.portOffset)
+                drawPath(
+                    path = path,
                     color = Color.Yellow,
-                    strokeWidth = 4f,
-                    start = from.portOffset,
-                    end = from.pointerPosition
+                    style = Stroke(width = 4f * scale)
                 )
             }
         }
