@@ -1,5 +1,6 @@
 package io.github.seggan.glagolitsa.ui
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -22,10 +24,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.composables.core.HorizontalSeparator
 import com.composeunstyled.Icon
+import com.composeunstyled.ProgressIndicator
 import com.composeunstyled.Text
 import com.composeunstyled.theme.Theme
 import glagolitsa.generated.resources.Res
 import glagolitsa.generated.resources.play_arrow
+import glagolitsa.generated.resources.progress_activity
 import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.node.Port
 import kotlinx.coroutines.launch
@@ -102,18 +106,41 @@ fun NodeView(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (nodeState is Node.State.Running) {
-//                    if (nodeState.progress != null) {
-//                        CircularProgressIndicator(
-//                            progress = nodeState.progress,
-//                            modifier = Modifier.size(24.dp),
-//                            strokeWidth = 3.dp
-//                        )
-//                    } else {
-//                        CircularProgressIndicator(
-//                            modifier = Modifier.size(24.dp),
-//                            strokeWidth = 3.dp
-//                        )
-//                    }
+                    if (nodeState.progress != null) {
+                        ProgressIndicator(
+                            progress = nodeState.progress,
+                            modifier = Modifier.size(24.dp),
+                            shape = CircleShape,
+                            backgroundColor = Theme[colors][background],
+                            contentColor = Color.Blue
+                        ) {
+                            TODO()
+                        }
+                    } else {
+                        ProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            shape = CircleShape,
+                            backgroundColor = Theme[colors][background],
+                            contentColor = Color.Blue
+                        ) {
+                            val transition = rememberInfiniteTransition()
+                            val rotation by transition.animateFloat(
+                                initialValue = 0f,
+                                targetValue = 360f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(1000, easing = LinearEasing),
+                                    repeatMode = RepeatMode.Restart
+                                )
+                            )
+                            Icon(
+                                painter = painterResource(Res.drawable.progress_activity),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .rotate(rotation)
+                            )
+                        }
+                    }
                 } else {
                     Icon(
                         painter = painterResource(Res.drawable.play_arrow),
@@ -124,9 +151,10 @@ fun NodeView(
                                     node.execute()
                                 }
                             }
+                            .size(24.dp)
                     )
                 }
-                Text(node.name, textAlign = TextAlign.Center)
+                Text(node.name, textAlign = TextAlign.Center, modifier = Modifier.height(24.dp))
             }
             HorizontalSeparator(modifier = Modifier.padding(vertical = 5.dp), color = Theme[colors][onBackground])
             for (parameter in node.parameters) {
