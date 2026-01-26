@@ -16,7 +16,15 @@ dependencies {
     implementation("org.jetbrains.compose.ui:ui-tooling-preview:1.10.0")
     implementation("io.github.vinceglb:filekit-dialogs-compose:0.12.0")
 
-    implementation(compose.desktop.currentOs)
+    implementation("com.composables:composeunstyled:1.49.6")
+    implementation("com.composables:composeunstyled-theming:1.49.6")
+    implementation("com.composables:composeunstyled-primitives:1.49.6")
+    implementation("com.composables:composeunstyled-platformtheme:1.49.6")
+
+    implementation(compose.desktop.currentOs) {
+        exclude("org.jetbrains.compose.material")
+        exclude("org.jetbrains.compose.material3")
+    }
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
 
     testImplementation(kotlin("test"))

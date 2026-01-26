@@ -1,13 +1,10 @@
 package io.github.seggan.glagolitsa.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.DropdownMenuState
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -18,25 +15,25 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
+import com.composeunstyled.theme.Theme
 import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.node.Port
 import io.github.seggan.glagolitsa.node.impl.LoadImageNode
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterialApi::class)
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun App() = MaterialTheme {
+fun App() = LightTheme {
     val nodes = remember {
-        mutableStateMapOf<Node, Offset>()
+        mutableStateMapOf<Node, Offset>(LoadImageNode() to Offset(400f, 300f))
     }
     var scale by remember { mutableStateOf(1f) }
 
     var currentlyConnectingPort by remember { mutableStateOf<Pair<Port<*>, Offset>?>(null) }
 
-    val contextMenuState = remember { DropdownMenuState() }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(Theme[colors][background])
             .pointerInput(Unit) {
                 detectDragGestures { change, dragAmount ->
                     change.consume()
@@ -66,32 +63,7 @@ fun App() = MaterialTheme {
                     change.consume()
                 }
             }
-            .contextMenu(contextMenuState)
     ) {
-        ContextMenu(contextMenuState) {
-            @Composable
-            fun ContextMenuScope.NodeButton(
-                name: String,
-                constructor: () -> Node
-            ) {
-                ContextMenuItem(
-                    text = { Text(name) },
-                    onClick = {
-                        val node = constructor()
-                        nodes[node] = (state.status as DropdownMenuState.Status.Open).position
-                    }
-                )
-            }
-
-            NodeButton("Load Image", ::LoadImageNode)
-            ContextSubmenu(
-                text = { Text("Placeholder Nodes") },
-            ) {
-                NodeButton("Example Node", ::LoadImageNode)
-                NodeButton("Another Node", ::LoadImageNode)
-            }
-        }
-
         for ((node, offset) in nodes) {
             NodeView(
                 node = node,

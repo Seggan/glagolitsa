@@ -7,7 +7,6 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,14 +20,17 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import glagolitsa.composeapp.generated.resources.Res
-import glagolitsa.composeapp.generated.resources.play_arrow
+import com.composables.core.HorizontalSeparator
+import com.composeunstyled.Icon
+import com.composeunstyled.Text
+import com.composeunstyled.theme.Theme
+import glagolitsa.generated.resources.Res
+import glagolitsa.generated.resources.play_arrow
 import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.node.Port
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun NodeView(
     node: Node,
@@ -51,7 +53,7 @@ fun NodeView(
                 y = offset.y.dp
             )
             .scale(scale)
-            .background(MaterialTheme.colors.background, RoundedCornerShape(10.dp))
+            .background(Theme[colors][background], RoundedCornerShape(10.dp))
             .width(IntrinsicSize.Max)
             .height(IntrinsicSize.Min)
             .pointerInput(Unit) {
@@ -62,19 +64,19 @@ fun NodeView(
             }
     ) {
         val nodeState = node.state
-        val contextMenuState = remember { DropdownMenuState() }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .contextMenu(contextMenuState)
-        ) {
+//        val contextMenuState = remember { DropdownMenuState() }
+//        Box(
+//            modifier = Modifier
+//                .fillMaxSize()
+//                .contextMenu(contextMenuState)
+//        ) {
 //            DropdownMenu(contextMenuState) {
 //                DropdownMenuItem(
 //                    text = { Text("Remove") },
 //                    onClick = onRemove
 //                )
 //            }
-        }
+//        }
         val contentPadding = 16.dp
         // Border drawn separately to be below the inner content
         Box(
@@ -100,34 +102,38 @@ fun NodeView(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (nodeState is Node.State.Running) {
-                    if (nodeState.progress != null) {
-                        CircularProgressIndicator(
-                            progress = nodeState.progress,
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 3.dp
-                        )
-                    } else {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 3.dp
-                        )
-                    }
+//                    if (nodeState.progress != null) {
+//                        CircularProgressIndicator(
+//                            progress = nodeState.progress,
+//                            modifier = Modifier.size(24.dp),
+//                            strokeWidth = 3.dp
+//                        )
+//                    } else {
+//                        CircularProgressIndicator(
+//                            modifier = Modifier.size(24.dp),
+//                            strokeWidth = 3.dp
+//                        )
+//                    }
                 } else {
                     Icon(
                         painter = painterResource(Res.drawable.play_arrow),
                         contentDescription = "Execute",
-                        modifier = Modifier.clickable {
-                            scope.launch {
-                                node.execute()
+                        modifier = Modifier
+                            .clickable {
+                                scope.launch {
+                                    node.execute()
+                                }
                             }
-                        }
                     )
                 }
                 Text(node.name, textAlign = TextAlign.Center)
             }
-            Divider(modifier = Modifier.padding(vertical = 5.dp))
+            HorizontalSeparator(modifier = Modifier.padding(vertical = 5.dp), color = Theme[colors][onBackground])
             for (parameter in node.parameters) {
-                Row(verticalAlignment = Alignment.CenterVertically) { parameter.generate() }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(5.dp)
+                ) { parameter.generate() }
             }
             Box {
                 Column(
@@ -159,7 +165,7 @@ fun NodeView(
             }
 
             if (nodeState is Node.State.Error) {
-                Divider(
+                HorizontalSeparator(
                     modifier = Modifier
                         .padding(vertical = 5.dp),
                     color = Color.Red

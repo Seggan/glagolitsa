@@ -1,11 +1,19 @@
 package io.github.seggan.glagolitsa.node
 
-import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.material.OutlinedButton
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
+import com.composeunstyled.Text
+import com.composeunstyled.TextField
+import com.composeunstyled.UnstyledButton
+import com.composeunstyled.theme.Theme
+import io.github.seggan.glagolitsa.ui.colors
+import io.github.seggan.glagolitsa.ui.outline
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.FileKitType
@@ -29,7 +37,7 @@ sealed class Parameter<T>(initialValue: T) {
         override fun generate() {
             val scope = rememberCoroutineScope()
             Text("File: ")
-            OutlinedButton(
+            UnstyledButton(
                 onClick = {
                     scope.launch {
                         val file = FileKit.openFilePicker(
@@ -38,9 +46,12 @@ sealed class Parameter<T>(initialValue: T) {
                         )
                         value = file?.toKotlinxIoPath()?.toFile()?.toPath()
                     }
-                }
+                },
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .border(1.dp, color = Theme[colors][outline], shape = RoundedCornerShape(10.dp))
             ) {
-                Text(value?.name ?: "Select file")
+                Text(text = value?.name ?: "Select file", modifier = Modifier.padding(vertical = 2.dp, horizontal = 5.dp))
             }
         }
     }
@@ -50,7 +61,7 @@ sealed class Parameter<T>(initialValue: T) {
         override fun generate() {
             val scope = rememberCoroutineScope()
             Text("File: ")
-            OutlinedButton(
+            UnstyledButton(
                 onClick = {
                     scope.launch {
                         val file = FileKit.openFileSaver(
@@ -72,9 +83,10 @@ sealed class Parameter<T>(initialValue: T) {
         override fun generate() {
             Text("$label: ")
             TextField(
-                state = rememberTextFieldState(value.toString()),
-                lineLimits = TextFieldLineLimits.SingleLine
-            )
+                state = rememberTextFieldState(value.toString())
+            ) {
+
+            }
         }
     }
 }
