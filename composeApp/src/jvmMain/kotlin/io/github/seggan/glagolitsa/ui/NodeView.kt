@@ -2,6 +2,7 @@ package io.github.seggan.glagolitsa.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -22,8 +23,12 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import glagolitsa.composeapp.generated.resources.Res
+import glagolitsa.composeapp.generated.resources.play_arrow
 import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.node.Port
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.painterResource
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -32,10 +37,11 @@ fun NodeView(
     offset: Offset,
     scale: Float,
     onDrag: (Offset) -> Unit = {},
-    onPortDrag: (Port, Offset?) -> Unit = { _, _ -> },
+    onPortDrag: (Port<*>, Offset?) -> Unit = { _, _ -> },
     onRemove: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val scope = rememberCoroutineScope()
     var size by remember { mutableStateOf(Offset.Zero) }
     Box(
         modifier = modifier
@@ -44,7 +50,7 @@ fun NodeView(
             }
             .offset(
                 x = (offset.x - size.x / 2).dp,
-                y = (offset.y - size.y / 2).dp
+                y = offset.y.dp
             )
             .scale(scale)
             .background(MaterialTheme.colors.background, RoundedCornerShape(10.dp))
@@ -57,13 +63,14 @@ fun NodeView(
                 }
             }
     ) {
-        val state = remember { DropdownMenuState() }
+        val nodeState = node.state
+        val contextMenuState = remember { DropdownMenuState() }
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .contextMenu(state)
+                .contextMenu(contextMenuState)
         ) {
-            DropdownMenu(state) {
+            DropdownMenu(contextMenuState) {
                 DropdownMenuItem(
                     text = { Text("Remove") },
                     onClick = onRemove
@@ -75,21 +82,58 @@ fun NodeView(
         Box(
             modifier = modifier
                 .matchParentSize()
-                .border(1.dp, Color.DarkGray, RoundedCornerShape(10.dp))
+                .border(
+                    width = 1.dp,
+                    color = when (node.state) {
+                        is Node.State.Idle -> Color.Gray
+                        is Node.State.Running -> Color.Blue
+                        is Node.State.Success -> Color.Green
+                        is Node.State.Error -> Color.Red
+                    },
+                    shape = RoundedCornerShape(10.dp)
+                )
                 .padding(16.dp)
         )
         Column(
             modifier = Modifier.padding(contentPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(node.name, textAlign = TextAlign.Center)
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (nodeState is Node.State.Running) {
+                    if (nodeState.progress != null) {
+                        CircularProgressIndicator(
+                            progress = nodeState.progress,
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 3.dp
+                        )
+                    } else {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 3.dp
+                        )
+                    }
+                } else {
+                    Icon(
+                        painter = painterResource(Res.drawable.play_arrow),
+                        contentDescription = "Execute",
+                        modifier = Modifier.clickable {
+                            scope.launch {
+                                node.execute()
+                            }
+                        }
+                    )
+                }
+                Text(node.name, textAlign = TextAlign.Center)
+            }
             HorizontalDivider(modifier = Modifier.padding(vertical = 5.dp))
             for (parameter in node.parameters) {
                 Row(verticalAlignment = Alignment.CenterVertically) { parameter.generate() }
             }
             Box {
                 Column(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.Start,
                     verticalArrangement = Arrangement.SpaceEvenly
                 ) {
@@ -102,7 +146,7 @@ fun NodeView(
                     }
                 }
                 Column(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.SpaceEvenly
                 ) {
@@ -115,20 +159,32 @@ fun NodeView(
                     }
                 }
             }
+
+            if (nodeState is Node.State.Error) {
+                HorizontalDivider(
+                    modifier = Modifier
+                        .padding(vertical = 5.dp),
+                    color = Color.Red
+                )
+                Text(
+                    text = nodeState.message,
+                    color = Color.Red
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun Port(
-    port: Port,
+    port: Port<*>,
     offset: Dp,
-    onDrag: (Port, Offset?) -> Unit
+    onDrag: (Port<*>, Offset?) -> Unit
 ) {
     Row(
         modifier = Modifier
             .offset(x = offset),
-        horizontalArrangement = if (port is Port.Input) Arrangement.Start else Arrangement.End,
+        horizontalArrangement = if (port is Port.Input<*>) Arrangement.Start else Arrangement.End,
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (port is Port.Output) {

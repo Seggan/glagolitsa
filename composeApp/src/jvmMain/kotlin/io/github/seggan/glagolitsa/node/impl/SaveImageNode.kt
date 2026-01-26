@@ -1,21 +1,32 @@
 package io.github.seggan.glagolitsa.node.impl
 
 import io.github.seggan.glagolitsa.node.Node
+import io.github.seggan.glagolitsa.node.NodeException
 import io.github.seggan.glagolitsa.node.Parameter
 import io.github.seggan.glagolitsa.node.Port
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlin.io.path.copyTo
+import kotlin.io.path.createDirectories
 
-class SaveImageNode : Node {
+class SaveImageNode : Node() {
 
     override val name = "Save Image"
 
-    override val inPorts = listOf(
-        Port.Input(
-            name = "Image",
-            type = Port.Type.IMAGE
-        )
+   private val imageIn by Port.Input(
+        node = this,
+        name = "Image",
+        type = Port.Type.Image
     )
 
-    private val fileParameter = Parameter.File(".fit", ".fits")
+    private val file by Parameter.SaveFilePicker("image", "fits")
 
-    override val parameters = listOf(fileParameter)
+    override suspend fun executeInternal() {
+        val origin = imageIn.getValue()
+        val destination = file ?: throw NodeException("No file selected")
+        withContext(Dispatchers.IO) {
+            destination.parent?.createDirectories()
+            origin.copyTo(destination, overwrite = true)
+        }
+    }
 }

@@ -31,7 +31,7 @@ fun App() = MaterialTheme {
     }
     var scale by remember { mutableStateOf(1f) }
 
-    var currentlyConnectingPort by remember { mutableStateOf<Pair<Port, Offset>?>(null) }
+    var currentlyConnectingPort by remember { mutableStateOf<Pair<Port<*>, Offset>?>(null) }
 
     Box(
         modifier = Modifier
@@ -138,18 +138,8 @@ fun App() = MaterialTheme {
                                 for (destPort in if (port is Port.Input) node.outPorts else node.inPorts) {
                                     val dist =
                                         (destPort.worldPosition + Port.CENTER_OFFSET * scale - pointerWorld).getDistanceSquared()
-                                    if (dist < Port.RADIUS * Port.RADIUS * scale * scale) {
-                                        when (port) {
-                                            is Port.Input -> {
-                                                port.connectedTo = destPort as Port.Output
-                                                destPort.connectedTo.add(port)
-                                            }
-
-                                            is Port.Output -> {
-                                                port.connectedTo.add(destPort as Port.Input)
-                                                destPort.connectedTo = port
-                                            }
-                                        }
+                                    if (dist < Port.RADIUS * Port.RADIUS * scale * scale && destPort.type == port.type) {
+                                        port.connect(destPort)
                                     }
                                 }
                             }
