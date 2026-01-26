@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,12 +68,12 @@ fun NodeView(
                 .fillMaxSize()
                 .contextMenu(contextMenuState)
         ) {
-            DropdownMenu(contextMenuState) {
-                DropdownMenuItem(
-                    text = { Text("Remove") },
-                    onClick = onRemove
-                )
-            }
+//            DropdownMenu(contextMenuState) {
+//                DropdownMenuItem(
+//                    text = { Text("Remove") },
+//                    onClick = onRemove
+//                )
+//            }
         }
         val contentPadding = 16.dp
         // Border drawn separately to be below the inner content
@@ -127,7 +125,7 @@ fun NodeView(
                 }
                 Text(node.name, textAlign = TextAlign.Center)
             }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 5.dp))
+            Divider(modifier = Modifier.padding(vertical = 5.dp))
             for (parameter in node.parameters) {
                 Row(verticalAlignment = Alignment.CenterVertically) { parameter.generate() }
             }
@@ -161,7 +159,7 @@ fun NodeView(
             }
 
             if (nodeState is Node.State.Error) {
-                HorizontalDivider(
+                Divider(
                     modifier = Modifier
                         .padding(vertical = 5.dp),
                     color = Color.Red

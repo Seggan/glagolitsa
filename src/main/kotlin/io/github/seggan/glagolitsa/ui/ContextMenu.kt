@@ -4,10 +4,11 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.DropdownMenuState
 import androidx.compose.material.Icon
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -54,15 +55,15 @@ interface ContextMenuScope {
 
 @Composable
 fun ContextMenuScope.ContextMenuItem(
-    text: @Composable () -> Unit,
+    text: @Composable RowScope.() -> Unit,
     onClick: () -> Unit
 ) {
     DropdownMenuItem(
-        text = text,
         onClick = {
             onClick()
             state.status = DropdownMenuState.Status.Closed
-        }
+        },
+        content = text
     )
 }
 
@@ -91,16 +92,17 @@ fun ContextMenuScope.ContextSubmenu(
     }
 
     DropdownMenuItem(
-        text = text,
         onClick = {},
         modifier = Modifier
             .hoverable(buttonInteraction)
             .onGloballyPositioned {
                 openPos = it.positionInParent()
                 openPos = openPos.copy(x = openPos.x + it.size.width)
-            },
-        trailingIcon = { Icon(painterResource(Res.drawable.chevron_right), contentDescription = null) }
-    )
+            }
+    ) {
+        text()
+        Icon(painterResource(Res.drawable.chevron_right), contentDescription = null)
+    }
 
     DropdownMenu(
         state = submenuState,
