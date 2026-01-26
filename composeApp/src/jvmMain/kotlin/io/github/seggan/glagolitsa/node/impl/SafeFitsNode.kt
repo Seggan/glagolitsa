@@ -9,11 +9,11 @@ import kotlinx.coroutines.withContext
 import kotlin.io.path.copyTo
 import kotlin.io.path.createDirectories
 
-class SaveImageNode : Node() {
+class SafeFitsNode : Node() {
 
-    override val name = "Save Image"
+    override val name = "Save Image as FITS"
 
-   private val imageIn by Port.Input(
+    private val imageIn by Port.Input(
         node = this,
         name = "Image",
         type = Port.Type.Image

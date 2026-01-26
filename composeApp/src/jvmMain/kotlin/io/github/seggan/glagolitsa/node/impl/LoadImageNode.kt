@@ -5,9 +5,9 @@ import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.node.NodeException
 import io.github.seggan.glagolitsa.node.Parameter
 import io.github.seggan.glagolitsa.node.Port
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlin.io.path.copyTo
+import io.github.seggan.glagolitsa.siril.SirilCommand
+import io.github.seggan.glagolitsa.siril.callSiril
+import io.github.seggan.glagolitsa.siril.sirilCommand
 import kotlin.io.path.exists
 
 class LoadImageNode : Node() {
@@ -23,14 +23,15 @@ class LoadImageNode : Node() {
     private val file by Parameter.FilePicker(ASTRO_IMAGE_TYPE)
 
     override suspend fun executeInternal() {
-        val out = getRandomFile()
+        val out = getRandomFile(".fit")
         val file = file ?: throw NodeException("No file selected")
         if (!file.exists()) {
             throw NodeException("File does not exist: $file")
         }
-        withContext(Dispatchers.IO) {
-            file.copyTo(out)
-        }
+        callSiril(
+            sirilCommand(SirilCommand.LOAD),
+            sirilCommand(SirilCommand.SAVE_FITS)
+        )
         imageOut.provide(out)
     }
 }

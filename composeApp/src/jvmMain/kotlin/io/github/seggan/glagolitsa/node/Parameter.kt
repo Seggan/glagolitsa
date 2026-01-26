@@ -1,7 +1,10 @@
 package io.github.seggan.glagolitsa.node
 
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.OutlinedButton
 import androidx.compose.material.Text
+import androidx.compose.material.TextField
 import androidx.compose.runtime.*
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.PlatformFile
@@ -61,6 +64,17 @@ sealed class Parameter<T>(initialValue: T) {
             ) {
                 Text(value?.name ?: "Select file")
             }
+        }
+    }
+
+    class Integer(private val label: String, initialValue: Int, private val range: IntRange? = null) : Parameter<Int>(initialValue) {
+        @Composable
+        override fun generate() {
+            Text("$label: ")
+            TextField(
+                state = rememberTextFieldState(value.toString()),
+                lineLimits = TextFieldLineLimits.SingleLine
+            )
         }
     }
 }

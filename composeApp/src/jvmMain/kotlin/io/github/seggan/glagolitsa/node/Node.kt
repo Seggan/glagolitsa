@@ -4,7 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import io.github.seggan.glagolitsa.node.impl.LoadImageNode
-import io.github.seggan.glagolitsa.node.impl.SaveImageNode
+import io.github.seggan.glagolitsa.node.impl.SafeFitsNode
 import java.nio.file.Path
 import kotlin.io.path.Path
 import kotlin.io.path.createDirectories
@@ -61,12 +61,12 @@ abstract class Node {
 
     protected abstract suspend fun executeInternal()
 
-    protected fun getRandomFile(): Path {
+    protected fun getRandomFile(ext: String = ""): Path {
         TEMP_DIR.createDirectories()
         val filename = List(16) {
             ('a'..'z') + ('0'..'9')
         }.flatten().shuffled().take(16).joinToString("")
-        return TEMP_DIR.resolve(filename)
+        return TEMP_DIR.resolve(filename + ext)
     }
 
     protected fun updateProgress(progress: Float?) {
@@ -76,7 +76,7 @@ abstract class Node {
     companion object {
         val TYPES = mapOf(
             "Load Image" to ::LoadImageNode,
-            "Save Image" to ::SaveImageNode
+            "Save Image" to ::SafeFitsNode
         )
 
         val TEMP_DIR = Path("/home/seggan/.tmp")

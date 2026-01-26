@@ -1,14 +1,11 @@
 package io.github.seggan.glagolitsa.ui
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuState
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -18,10 +15,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.pointer.*
-import androidx.compose.ui.util.fastAll
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.input.pointer.pointerInput
 import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.node.Port
+import io.github.seggan.glagolitsa.node.impl.LoadImageNode
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterialApi::class)
 @Composable
@@ -32,6 +31,8 @@ fun App() = MaterialTheme {
     var scale by remember { mutableStateOf(1f) }
 
     var currentlyConnectingPort by remember { mutableStateOf<Pair<Port<*>, Offset>?>(null) }
+
+    val contextMenuState = remember { DropdownMenuState() }
 
     Box(
         modifier = Modifier
@@ -65,26 +66,32 @@ fun App() = MaterialTheme {
                     change.consume()
                 }
             }
+            .contextMenu(contextMenuState)
     ) {
-        val state = remember { DropdownMenuState() }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .contextMenu(state)
-        ) {
-            DropdownMenu(state) {
-                for ((name, constructor) in Node.TYPES) {
-                    DropdownMenuItem(
-                        text = { Text(name) },
-                        onClick = {
-                            val node = constructor()
-                            nodes[node] = (state.status as DropdownMenuState.Status.Open).position
-                            state.status = DropdownMenuState.Status.Closed
-                        }
-                    )
-                }
+        ContextMenu(contextMenuState) {
+            @Composable
+            fun ContextMenuScope.NodeButton(
+                name: String,
+                constructor: () -> Node
+            ) {
+                ContextMenuItem(
+                    text = { Text(name) },
+                    onClick = {
+                        val node = constructor()
+                        nodes[node] = (state.status as DropdownMenuState.Status.Open).position
+                    }
+                )
+            }
+
+            NodeButton("Load Image", ::LoadImageNode)
+            ContextSubmenu(
+                text = { Text("Placeholder Nodes") },
+            ) {
+                NodeButton("Example Node", ::LoadImageNode)
+                NodeButton("Another Node", ::LoadImageNode)
             }
         }
+
         for ((node, offset) in nodes) {
             NodeView(
                 node = node,
@@ -192,19 +199,6 @@ fun App() = MaterialTheme {
                     }
                 }
             }
-        }
-    }
-}
-
-fun Modifier.contextMenu(state: DropdownMenuState): Modifier = pointerInput(Unit) {
-    awaitEachGesture {
-        var event: PointerEvent
-        do {
-            event = awaitPointerEvent()
-        } while (!event.changes.fastAll { it.changedToDown() })
-        if (event.buttons.isSecondaryPressed) {
-            event.changes.forEach { it.consume() }
-            state.status = DropdownMenuState.Status.Open(event.changes.first().position)
         }
     }
 }
