@@ -68,19 +68,19 @@ fun NodeView(
             }
     ) {
         val nodeState = node.state
-//        val contextMenuState = remember { DropdownMenuState() }
-//        Box(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .contextMenu(contextMenuState)
-//        ) {
-//            DropdownMenu(contextMenuState) {
-//                DropdownMenuItem(
-//                    text = { Text("Remove") },
-//                    onClick = onRemove
-//                )
-//            }
-//        }
+        val contextMenuState = remember { ContextMenuState() }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .contextMenu(contextMenuState)
+        ) {
+            ContextMenu(contextMenuState) {
+                ContextMenuItem(
+                    text = { Text("Remove") },
+                    onClick = onRemove
+                )
+            }
+        }
         val contentPadding = 16.dp
         // Border drawn separately to be below the inner content
         Box(

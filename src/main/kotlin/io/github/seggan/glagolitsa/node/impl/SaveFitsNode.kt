@@ -9,7 +9,7 @@ import kotlinx.coroutines.withContext
 import kotlin.io.path.copyTo
 import kotlin.io.path.createDirectories
 
-class SafeFitsNode : Node() {
+class SaveFitsNode : Node() {
 
     override val name = "Save Image as FITS"
 

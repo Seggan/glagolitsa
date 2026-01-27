@@ -48,8 +48,8 @@ sealed class Parameter<T>(initialValue: T) {
                     }
                 },
                 modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .border(1.dp, color = Theme[colors][outline], shape = RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(5.dp))
+                    .border(1.dp, color = Theme[colors][outline], shape = RoundedCornerShape(5.dp))
             ) {
                 Text(text = value?.name ?: "Select file", modifier = Modifier.padding(vertical = 2.dp, horizontal = 5.dp))
             }
@@ -71,9 +71,12 @@ sealed class Parameter<T>(initialValue: T) {
                         )
                         value = file?.toKotlinxIoPath()?.toFile()?.toPath()
                     }
-                }
+                },
+                modifier = Modifier
+                    .clip(RoundedCornerShape(5.dp))
+                    .border(1.dp, color = Theme[colors][outline], shape = RoundedCornerShape(5.dp))
             ) {
-                Text(value?.name ?: "Select file")
+                Text(text = value?.name ?: "Select file", modifier = Modifier.padding(vertical = 2.dp, horizontal = 5.dp))
             }
         }
     }

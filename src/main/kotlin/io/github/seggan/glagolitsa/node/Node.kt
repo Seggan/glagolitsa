@@ -4,7 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import io.github.seggan.glagolitsa.node.impl.LoadImageNode
-import io.github.seggan.glagolitsa.node.impl.SafeFitsNode
+import io.github.seggan.glagolitsa.node.impl.SaveFitsNode
 import java.nio.file.Path
 import kotlin.io.path.Path
 import kotlin.io.path.createDirectories
@@ -76,7 +76,7 @@ abstract class Node {
     companion object {
         val TYPES = mapOf(
             "Load Image" to ::LoadImageNode,
-            "Save Image" to ::SafeFitsNode
+            "Save Image" to ::SaveFitsNode
         )
 
         val TEMP_DIR = Path("/home/seggan/.tmp")

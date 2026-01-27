@@ -15,20 +15,22 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
+import com.composeunstyled.Text
 import com.composeunstyled.theme.Theme
 import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.node.Port
 import io.github.seggan.glagolitsa.node.impl.LoadImageNode
+import io.github.seggan.glagolitsa.node.impl.SaveFitsNode
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun App() = LightTheme {
-    val nodes = remember {
-        mutableStateMapOf<Node, Offset>(LoadImageNode() to Offset(400f, 300f))
-    }
+    val nodes = remember { mutableStateMapOf<Node, Offset>() }
     var scale by remember { mutableStateOf(1f) }
 
     var currentlyConnectingPort by remember { mutableStateOf<Pair<Port<*>, Offset>?>(null) }
+
+    val contextMenuState = remember { ContextMenuState() }
 
     Box(
         modifier = Modifier
@@ -63,7 +65,32 @@ fun App() = LightTheme {
                     change.consume()
                 }
             }
+            .contextMenu(contextMenuState)
     ) {
+
+        ContextMenu(contextMenuState) {
+            @Composable
+            fun NodeButton(
+                name: String,
+                constructor: () -> Node
+            ) {
+                ContextMenuItem(
+                    text = { Text(name) },
+                    onClick = {
+                        val node = constructor()
+                        nodes[node] = (contextMenuState.status as ContextMenuState.Status.Open).position
+                    }
+                )
+            }
+            ContextSubmenu(text = { Text("Add Node") }) {
+                ContextSubmenu(text = { Text("File") }) {
+                    NodeButton("Load Image", ::LoadImageNode)
+                    NodeButton("Save Image as FITS", ::SaveFitsNode)
+                }
+            }
+        }
+
+        // Render nodes
         for ((node, offset) in nodes) {
             NodeView(
                 node = node,
@@ -130,6 +157,7 @@ fun App() = LightTheme {
             )
         }
 
+        // Render connections
         Canvas(
             modifier = Modifier.fillMaxSize()
         ) {
