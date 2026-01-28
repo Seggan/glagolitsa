@@ -1,6 +1,8 @@
 package io.github.seggan.glagolitsa.node
 
 import androidx.compose.ui.geometry.Offset
+import io.github.seggan.glagolitsa.node.impl.LoadImageNode
+import io.github.seggan.glagolitsa.node.impl.SaveFitsNode
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -38,6 +40,11 @@ fun saveToJson(nodes: Map<Node<*>, Offset>): JsonElement {
     return Json.encodeToJsonElement(savedNodes)
 }
 
+private val types = mapOf(
+    LoadImageNode.id to LoadImageNode,
+    SaveFitsNode.id to SaveFitsNode,
+)
+
 fun loadFromJson(
     jsonElement: JsonElement,
     nodeOut: MutableMap<Node<*>, Offset>
@@ -45,7 +52,7 @@ fun loadFromJson(
     val savedNodes = Json.decodeFromJsonElement<List<SavedNode>>(jsonElement)
     val nodeList = mutableListOf<Node<*>>()
     for (savedNode in savedNodes) {
-        val spec = Node.TYPES[savedNode.id]
+        val spec = types[savedNode.id]
             ?: throw IllegalArgumentException("Unknown node type: ${savedNode.id}")
         val node = spec.construct()
         for ((param, savedValue) in node.parameters.zip(savedNode.parameters)) {

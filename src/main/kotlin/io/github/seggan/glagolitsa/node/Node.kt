@@ -3,8 +3,6 @@ package io.github.seggan.glagolitsa.node
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import io.github.seggan.glagolitsa.node.impl.LoadImageNode
-import io.github.seggan.glagolitsa.node.impl.SaveFitsNode
 import kotlin.properties.ReadOnlyProperty
 
 abstract class Node<N : Node<N>> {
@@ -60,13 +58,6 @@ abstract class Node<N : Node<N>> {
     protected operator fun <T> Parameter<T>.provideDelegate(thisRef: Any?, prop: kotlin.reflect.KProperty<*>): ReadOnlyProperty<Any?, T> {
         parameters.add(this)
         return ReadOnlyProperty { _, _ -> value }
-    }
-
-    companion object {
-        val TYPES = mapOf(
-            LoadImageNode.id to LoadImageNode,
-            SaveFitsNode.id to SaveFitsNode,
-        )
     }
 
     sealed interface State {

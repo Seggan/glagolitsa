@@ -30,7 +30,9 @@ import io.github.vinceglb.filekit.dialogs.openFileSaver
 import io.github.vinceglb.filekit.toKotlinxIoPath
 import io.github.vinceglb.filekit.utils.toFile
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.json.Json
+import kotlin.coroutines.resume
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
 
@@ -38,6 +40,7 @@ import kotlin.io.path.writeText
 @Composable
 fun App() = LightTheme {
     val scope = rememberCoroutineScope()
+    var compositionNotifier: (() -> Unit)? by remember { mutableStateOf(null) }
 
     val nodes = remember { mutableStateMapOf<Node<*>, Offset>() }
     var scale by remember { mutableStateOf(1f) }
@@ -81,7 +84,7 @@ fun App() = LightTheme {
             }
             .contextMenu(contextMenuState)
     ) {
-
+        compositionNotifier?.invoke()
         ContextMenu(contextMenuState) {
             ContextMenuItem(
                 text = { Text("Save Project") },
@@ -102,6 +105,12 @@ fun App() = LightTheme {
                         val input = FileKit.openFilePicker(type = FileKitType.File("json"))?.toKotlinxIoPath()?.toFile()?.toPath()
                         if (input != null) {
                             nodes.clear()
+                            suspendCancellableCoroutine {
+                                compositionNotifier = {
+                                    it.resume(Unit)
+                                }
+                            }
+                            compositionNotifier = null
                             loadFromJson(Json.parseToJsonElement(input.readText()), nodes)
                         }
                     }
