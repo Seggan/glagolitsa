@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.changedToDown
@@ -43,12 +44,15 @@ fun ContextMenu(
             offset = IntOffset(status.position.x.toInt(), status.position.y.toInt()),
             onDismissRequest = {
                 state.status = ContextMenuState.Status.Closed
-            },
+            }
         ) {
+            val shape = RoundedCornerShape(5.dp)
             Column(
                 modifier = modifier
-                    .padding(2.dp)
-                    .border(Dp.Hairline, color = Theme[colors][outline], shape = RoundedCornerShape(1.dp))
+                    .shadow(2.dp, shape = shape)
+                    .background(color = Theme[colors][background], shape = shape)
+                    .border(Dp.Hairline, color = Theme[colors][outline], shape = shape)
+                    .padding(5.dp)
                     .width(IntrinsicSize.Max)
                     .height(IntrinsicSize.Min),
             ) {
@@ -103,7 +107,7 @@ fun ContextMenuScope.ContextMenuItem(
         },
         modifier = modifier
             .background(color = Theme[colors][background], shape = RoundedCornerShape(1.dp))
-            .padding(3.dp)
+            .padding(1.dp)
             .fillMaxWidth()
     ) {
         Row(
@@ -138,11 +142,18 @@ fun ContextMenuScope.ContextSubmenu(
             .hoverable(buttonInteraction)
             .onGloballyPositioned {
                 openPos = it.positionInParent()
-                openPos = openPos.copy(x = openPos.x + it.size.width, y = openPos.y - 2)
+                openPos = openPos.copy(x = openPos.x + it.size.width, y = openPos.y)
             }
+            .widthIn(min = 100.dp)
     ) {
-        text()
-        Icon(painterResource(Res.drawable.chevron_right), contentDescription = null)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            text()
+            Icon(painterResource(Res.drawable.chevron_right), contentDescription = null)
+        }
     }
 
     if (isHovered || isMenuHovered || submenuState.childOpen) {

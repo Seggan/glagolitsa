@@ -3,13 +3,11 @@ package io.github.seggan.glagolitsa.node
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.composeunstyled.Text
-import com.composeunstyled.TextField
 import com.composeunstyled.UnstyledButton
 import com.composeunstyled.theme.Theme
 import io.github.seggan.glagolitsa.ui.colors
@@ -22,7 +20,12 @@ import io.github.vinceglb.filekit.dialogs.openFileSaver
 import io.github.vinceglb.filekit.toKotlinxIoPath
 import io.github.vinceglb.filekit.utils.toFile
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import java.nio.file.Path
+import kotlin.io.path.Path
 import kotlin.io.path.name
 
 sealed class Parameter<T>(initialValue: T) {
@@ -32,7 +35,11 @@ sealed class Parameter<T>(initialValue: T) {
     @Composable
     abstract fun generate()
 
+    abstract fun saveValue(): JsonElement
+    abstract fun loadValue(element: JsonElement)
+
     class FilePicker(private val type: FileKitType) : Parameter<Path?>(null) {
+
         @Composable
         override fun generate() {
             val scope = rememberCoroutineScope()
@@ -54,9 +61,19 @@ sealed class Parameter<T>(initialValue: T) {
                 Text(text = value?.name ?: "Select file", modifier = Modifier.padding(vertical = 2.dp, horizontal = 5.dp))
             }
         }
+
+        override fun saveValue(): JsonElement {
+            return JsonPrimitive(value?.toString())
+        }
+
+        override fun loadValue(element: JsonElement) {
+            val pathString = element.jsonPrimitive.contentOrNull
+            value = pathString?.let(::Path)
+        }
     }
 
     class SaveFilePicker(private val suggestedName: String, private val suggestedExtension: String) : Parameter<Path?>(null) {
+
         @Composable
         override fun generate() {
             val scope = rememberCoroutineScope()
@@ -79,17 +96,14 @@ sealed class Parameter<T>(initialValue: T) {
                 Text(text = value?.name ?: "Select file", modifier = Modifier.padding(vertical = 2.dp, horizontal = 5.dp))
             }
         }
-    }
 
-    class Integer(private val label: String, initialValue: Int, private val range: IntRange? = null) : Parameter<Int>(initialValue) {
-        @Composable
-        override fun generate() {
-            Text("$label: ")
-            TextField(
-                state = rememberTextFieldState(value.toString())
-            ) {
+        override fun saveValue(): JsonElement {
+            return JsonPrimitive(value?.toString())
+        }
 
-            }
+        override fun loadValue(element: JsonElement) {
+            val pathString = element.jsonPrimitive.contentOrNull
+            value = pathString?.let(::Path)
         }
     }
 }

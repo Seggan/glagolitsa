@@ -2,11 +2,13 @@ package io.github.seggan.glagolitsa
 
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
-import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.ui.App
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.FileKitType
+import java.nio.file.Path
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.Path
+import kotlin.io.path.createDirectories
 import kotlin.io.path.deleteRecursively
 
 @OptIn(ExperimentalPathApi::class)
@@ -16,7 +18,7 @@ fun main() {
         Window(
             onCloseRequest = {
                 exitApplication()
-                Node.TEMP_DIR.deleteRecursively()
+                TEMP_DIR.deleteRecursively()
             },
             title = "Glagolitsa",
         ) {
@@ -43,3 +45,13 @@ val ASTRO_IMAGE_TYPE = FileKitType.File(
     "fits",
     "fts"
 )
+
+val TEMP_DIR = Path("/home/seggan/.tmp")
+
+fun getRandomFile(ext: String = ""): Path {
+    TEMP_DIR.createDirectories()
+    val filename = List(16) {
+        ('a'..'z') + ('0'..'9')
+    }.flatten().shuffled().take(16).joinToString("")
+    return TEMP_DIR.resolve(filename + ext)
+}

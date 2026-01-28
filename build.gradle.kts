@@ -2,6 +2,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
     kotlin("jvm") version "2.2.20"
+    kotlin("plugin.serialization") version "2.2.20"
     id("org.jetbrains.compose.hot-reload") version "1.0.0"
     id("org.jetbrains.compose") version "1.10.0"
     id("org.jetbrains.kotlin.plugin.compose") version "2.2.20"
@@ -26,6 +27,8 @@ dependencies {
         exclude("org.jetbrains.compose.material3")
     }
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
 
     testImplementation(kotlin("test"))
 }

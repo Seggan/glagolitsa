@@ -37,7 +37,7 @@ import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun NodeView(
-    node: Node,
+    node: Node<*>,
     offset: Offset,
     scale: Float,
     onDrag: (Offset) -> Unit = {},
@@ -154,7 +154,7 @@ fun NodeView(
                             .size(24.dp)
                     )
                 }
-                Text(node.name, textAlign = TextAlign.Center, modifier = Modifier.height(24.dp))
+                Text(node.spec.name, textAlign = TextAlign.Center, modifier = Modifier.height(24.dp))
             }
             HorizontalSeparator(modifier = Modifier.padding(vertical = 5.dp), color = Theme[colors][onBackground])
             for (parameter in node.parameters) {

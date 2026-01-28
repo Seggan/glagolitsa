@@ -9,9 +9,9 @@ import kotlinx.coroutines.withContext
 import kotlin.io.path.copyTo
 import kotlin.io.path.createDirectories
 
-class SaveFitsNode : Node() {
+class SaveFitsNode : Node<SaveFitsNode>() {
 
-    override val name = "Save Image as FITS"
+    override val spec = Companion
 
     private val imageIn by Port.Input(
         node = this,
@@ -28,5 +28,12 @@ class SaveFitsNode : Node() {
             destination.parent?.createDirectories()
             origin.copyTo(destination, overwrite = true)
         }
+    }
+
+    companion object : Spec<SaveFitsNode>() {
+        override val id = "save-fits"
+        override val name = "Save Image as FITS"
+
+        override fun construct() = SaveFitsNode()
     }
 }

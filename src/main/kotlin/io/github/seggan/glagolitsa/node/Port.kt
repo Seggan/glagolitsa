@@ -8,7 +8,7 @@ import androidx.compose.ui.graphics.Color
 import java.nio.file.Path
 import kotlin.io.path.deleteIfExists
 
-sealed class Port<T>(val node: Node) {
+sealed class Port<T>(val node: Node<*>) {
 
     sealed class Type<T>(val color: Color) {
         data object Image : Type<Path>(Color(0xFFFFDD00))
@@ -22,7 +22,7 @@ sealed class Port<T>(val node: Node) {
     abstract fun connect(other: Port<*>)
 
     class Input<T>(
-        node: Node,
+        node: Node<*>,
         override val name: String,
         override val type: Type<T>,
     ) : Port<T>(node) {
@@ -49,7 +49,7 @@ sealed class Port<T>(val node: Node) {
     }
 
     class Output<T>(
-        node: Node,
+        node: Node<*>,
         override val name: String,
         override val type: Type<T>,
     ) : Port<T>(node) {

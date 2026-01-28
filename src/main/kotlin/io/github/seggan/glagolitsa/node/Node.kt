@@ -5,38 +5,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import io.github.seggan.glagolitsa.node.impl.LoadImageNode
 import io.github.seggan.glagolitsa.node.impl.SaveFitsNode
-import java.nio.file.Path
-import kotlin.io.path.Path
-import kotlin.io.path.createDirectories
 import kotlin.properties.ReadOnlyProperty
 
-abstract class Node {
+abstract class Node<N : Node<N>> {
 
-    abstract val name: String
+    abstract val spec: Spec<N>
 
     var state by mutableStateOf<State>(State.Idle)
         protected set
 
     val inPorts = mutableListOf<Port.Input<*>>()
 
-    protected operator fun <T> Port.Input<T>.provideDelegate(thisRef: Any?, prop: kotlin.reflect.KProperty<*>): ReadOnlyProperty<Any?, Port.Input<T>> {
-        inPorts.add(this)
-        return ReadOnlyProperty { _, _ -> this }
-    }
-
     val outPorts = mutableListOf<Port.Output<*>>()
 
-    protected operator fun <T> Port.Output<T>.provideDelegate(thisRef: Any?, prop: kotlin.reflect.KProperty<*>): ReadOnlyProperty<Any?, Port.Output<T>> {
-        outPorts.add(this)
-        return ReadOnlyProperty { _, _ -> this }
-    }
-
     val parameters = mutableListOf<Parameter<*>>()
-
-    protected operator fun <T> Parameter<T>.provideDelegate(thisRef: Any?, prop: kotlin.reflect.KProperty<*>): ReadOnlyProperty<Any?, T> {
-        parameters.add(this)
-        return ReadOnlyProperty { _, _ -> value }
-    }
 
     private fun flush() {
         state = State.Idle
@@ -61,25 +43,30 @@ abstract class Node {
 
     protected abstract suspend fun executeInternal()
 
-    protected fun getRandomFile(ext: String = ""): Path {
-        TEMP_DIR.createDirectories()
-        val filename = List(16) {
-            ('a'..'z') + ('0'..'9')
-        }.flatten().shuffled().take(16).joinToString("")
-        return TEMP_DIR.resolve(filename + ext)
-    }
-
     protected fun updateProgress(progress: Float?) {
         state = State.Running(progress)
     }
 
+    protected operator fun <T> Port.Input<T>.provideDelegate(thisRef: Any?, prop: kotlin.reflect.KProperty<*>): ReadOnlyProperty<Any?, Port.Input<T>> {
+        inPorts.add(this)
+        return ReadOnlyProperty { _, _ -> this }
+    }
+
+    protected operator fun <T> Port.Output<T>.provideDelegate(thisRef: Any?, prop: kotlin.reflect.KProperty<*>): ReadOnlyProperty<Any?, Port.Output<T>> {
+        outPorts.add(this)
+        return ReadOnlyProperty { _, _ -> this }
+    }
+
+    protected operator fun <T> Parameter<T>.provideDelegate(thisRef: Any?, prop: kotlin.reflect.KProperty<*>): ReadOnlyProperty<Any?, T> {
+        parameters.add(this)
+        return ReadOnlyProperty { _, _ -> value }
+    }
+
     companion object {
         val TYPES = mapOf(
-            "Load Image" to ::LoadImageNode,
-            "Save Image" to ::SaveFitsNode
+            LoadImageNode.id to LoadImageNode,
+            SaveFitsNode.id to SaveFitsNode,
         )
-
-        val TEMP_DIR = Path("/home/seggan/.tmp")
     }
 
     sealed interface State {
@@ -87,6 +74,13 @@ abstract class Node {
         data class Running(val progress: Float?) : State
         data object Success : State
         data class Error(val message: String) : State
+    }
+
+    abstract class Spec<N : Node<N>> protected constructor() {
+        abstract val id: String
+        abstract val name: String
+
+        abstract fun construct(): N
     }
 }
 

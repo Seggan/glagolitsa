@@ -21,11 +21,25 @@ import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.node.Port
 import io.github.seggan.glagolitsa.node.impl.LoadImageNode
 import io.github.seggan.glagolitsa.node.impl.SaveFitsNode
+import io.github.seggan.glagolitsa.node.loadFromJson
+import io.github.seggan.glagolitsa.node.saveToJson
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.openFilePicker
+import io.github.vinceglb.filekit.dialogs.openFileSaver
+import io.github.vinceglb.filekit.toKotlinxIoPath
+import io.github.vinceglb.filekit.utils.toFile
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlin.io.path.readText
+import kotlin.io.path.writeText
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun App() = LightTheme {
-    val nodes = remember { mutableStateMapOf<Node, Offset>() }
+    val scope = rememberCoroutineScope()
+
+    val nodes = remember { mutableStateMapOf<Node<*>, Offset>() }
     var scale by remember { mutableStateOf(1f) }
 
     var currentlyConnectingPort by remember { mutableStateOf<Pair<Port<*>, Offset>?>(null) }
@@ -69,23 +83,45 @@ fun App() = LightTheme {
     ) {
 
         ContextMenu(contextMenuState) {
+            ContextMenuItem(
+                text = { Text("Save Project") },
+                onClick = {
+                    scope.launch {
+                        val output = FileKit.openFileSaver(suggestedName = "project", extension = "json")?.toKotlinxIoPath()?.toFile()?.toPath()
+                        if (output != null) {
+                            val json = saveToJson(nodes)
+                            output.writeText(json.toString())
+                        }
+                    }
+                }
+            )
+            ContextMenuItem(
+                text = { Text("Load Project") },
+                onClick = {
+                    scope.launch {
+                        val input = FileKit.openFilePicker(type = FileKitType.File("json"))?.toKotlinxIoPath()?.toFile()?.toPath()
+                        if (input != null) {
+                            nodes.clear()
+                            loadFromJson(Json.parseToJsonElement(input.readText()), nodes)
+                        }
+                    }
+                }
+            )
+
             @Composable
-            fun NodeButton(
-                name: String,
-                constructor: () -> Node
-            ) {
+            fun NodeButton(spec: Node.Spec<*>) {
                 ContextMenuItem(
-                    text = { Text(name) },
+                    text = { Text(spec.name) },
                     onClick = {
-                        val node = constructor()
+                        val node = spec.construct()
                         nodes[node] = (contextMenuState.status as ContextMenuState.Status.Open).position
                     }
                 )
             }
             ContextSubmenu(text = { Text("Add Node") }) {
                 ContextSubmenu(text = { Text("File") }) {
-                    NodeButton("Load Image", ::LoadImageNode)
-                    NodeButton("Save Image as FITS", ::SaveFitsNode)
+                    NodeButton(LoadImageNode)
+                    NodeButton(SaveFitsNode)
                 }
             }
         }
