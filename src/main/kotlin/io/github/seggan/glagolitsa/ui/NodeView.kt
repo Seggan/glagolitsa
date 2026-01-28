@@ -20,6 +20,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.composables.core.HorizontalSeparator
@@ -32,15 +33,26 @@ import glagolitsa.generated.resources.play_arrow
 import glagolitsa.generated.resources.progress_activity
 import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.node.Port
+import io.github.seggan.glagolitsa.node.impl.AutoStretchNode
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+
+@Preview
+@Composable
+private fun NodeViewPreview() = LightTheme {
+    NodeView(
+        node = AutoStretchNode(),
+        offset = Offset(0f, 0f),
+        scale = 1f
+    )
+}
 
 @Composable
 fun NodeView(
     node: Node<*>,
     offset: Offset,
     scale: Float,
-    onDrag: (Offset) -> Unit = {},
+    onDrag: (Node<*>, Offset) -> Unit = { _, _ -> },
     onPortDrag: (Port<*>, Offset?) -> Unit = { _, _ -> },
     onRemove: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -63,7 +75,7 @@ fun NodeView(
             .pointerInput(Unit) {
                 detectDragGestures { change, dragAmount ->
                     change.consume()
-                    onDrag(dragAmount)
+                    onDrag(node, dragAmount)
                 }
             }
     ) {
@@ -163,9 +175,11 @@ fun NodeView(
                     modifier = Modifier.padding(5.dp)
                 ) { parameter.generate() }
             }
-            Box {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.Start,
                     verticalArrangement = Arrangement.SpaceEvenly
                 ) {
@@ -178,7 +192,6 @@ fun NodeView(
                     }
                 }
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.SpaceEvenly
                 ) {

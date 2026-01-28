@@ -43,7 +43,8 @@ val ASTRO_IMAGE_TYPE = FileKitType.File(
     "ppm",
     "fit",
     "fits",
-    "fts"
+    "fts",
+    "xisf"
 )
 
 val TEMP_DIR = Path("/home/seggan/.tmp")

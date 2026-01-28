@@ -30,8 +30,12 @@ class LoadImageNode : Node<LoadImageNode>() {
             throw NodeException("File does not exist: $file")
         }
         callSiril(
-            sirilCommand(SirilCommand.LOAD),
-            sirilCommand(SirilCommand.SAVE_FITS)
+            sirilCommand(SirilCommand.LOAD) {
+                param(file)
+            },
+            sirilCommand(SirilCommand.SAVE_FITS) {
+                param(out)
+            }
         )
         imageOut.provide(out)
     }

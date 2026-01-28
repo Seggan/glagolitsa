@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 enum class SirilCommand(val cmd: String) {
+    AUTOSTRETCH("autostretch"),
     LOAD("load"),
     SAVE_FITS("save"),
     SAVE_BMP("savebmp"),
@@ -55,7 +56,7 @@ suspend fun callSiril(vararg commands: List<String>) {
             writer.write("requires 1.4.0")
             writer.newLine()
             for (command in commands) {
-                writer.write(command.joinToString(" "))
+                writer.write(command.joinToString(" ") { if (it.contains(' ')) "\"$it\"" else it })
                 writer.newLine()
             }
             writer.flush()

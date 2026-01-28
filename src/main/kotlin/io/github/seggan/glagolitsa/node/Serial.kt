@@ -1,6 +1,7 @@
 package io.github.seggan.glagolitsa.node
 
 import androidx.compose.ui.geometry.Offset
+import io.github.seggan.glagolitsa.node.impl.AutoStretchNode
 import io.github.seggan.glagolitsa.node.impl.LoadImageNode
 import io.github.seggan.glagolitsa.node.impl.SaveFitsNode
 import kotlinx.serialization.Serializable
@@ -41,6 +42,7 @@ fun saveToJson(nodes: Map<Node<*>, Offset>): JsonElement {
 }
 
 private val types = mapOf(
+    AutoStretchNode.id to AutoStretchNode,
     LoadImageNode.id to LoadImageNode,
     SaveFitsNode.id to SaveFitsNode,
 )

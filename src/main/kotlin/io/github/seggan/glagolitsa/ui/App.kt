@@ -19,6 +19,7 @@ import com.composeunstyled.Text
 import com.composeunstyled.theme.Theme
 import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.node.Port
+import io.github.seggan.glagolitsa.node.impl.AutoStretchNode
 import io.github.seggan.glagolitsa.node.impl.LoadImageNode
 import io.github.seggan.glagolitsa.node.impl.SaveFitsNode
 import io.github.seggan.glagolitsa.node.loadFromJson
@@ -90,7 +91,9 @@ fun App() = LightTheme {
                 text = { Text("Save Project") },
                 onClick = {
                     scope.launch {
-                        val output = FileKit.openFileSaver(suggestedName = "project", extension = "json")?.toKotlinxIoPath()?.toFile()?.toPath()
+                        val output =
+                            FileKit.openFileSaver(suggestedName = "project", extension = "json")?.toKotlinxIoPath()
+                                ?.toFile()?.toPath()
                         if (output != null) {
                             val json = saveToJson(nodes)
                             output.writeText(json.toString())
@@ -102,9 +105,11 @@ fun App() = LightTheme {
                 text = { Text("Load Project") },
                 onClick = {
                     scope.launch {
-                        val input = FileKit.openFilePicker(type = FileKitType.File("json"))?.toKotlinxIoPath()?.toFile()?.toPath()
+                        val input = FileKit.openFilePicker(type = FileKitType.File("json"))?.toKotlinxIoPath()?.toFile()
+                            ?.toPath()
                         if (input != null) {
                             nodes.clear()
+                            // Wait for recomposition to finish clearing nodes, as it tends to reuse old NodeViews otherwise
                             suspendCancellableCoroutine {
                                 compositionNotifier = {
                                     it.resume(Unit)
@@ -132,6 +137,9 @@ fun App() = LightTheme {
                     NodeButton(LoadImageNode)
                     NodeButton(SaveFitsNode)
                 }
+                ContextSubmenu(text = { Text("Stretch") }) {
+                    NodeButton(AutoStretchNode)
+                }
             }
         }
 
@@ -157,7 +165,7 @@ fun App() = LightTheme {
                     }
                     nodes.remove(node)
                 },
-                onDrag = { dragAmount ->
+                onDrag = { node, dragAmount ->
                     nodes[node] = nodes[node]!! + dragAmount * scale
                 },
                 onPortDrag = onPortDrag@{ port, pointerRel ->
