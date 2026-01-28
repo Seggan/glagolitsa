@@ -28,7 +28,7 @@ class PreviewNode : Node<PreviewNode>() {
     private val quality by Parameter.FloatSlider(
         label = "Quality",
         initialValue = 0.5f,
-        range = 0.20001f..1f
+        range = 0.20001f..0.99999f
     )
 
     private val render by Output.Image()

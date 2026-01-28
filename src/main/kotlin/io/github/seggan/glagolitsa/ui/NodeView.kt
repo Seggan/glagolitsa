@@ -66,7 +66,7 @@ fun NodeView(
             }
             .offset(
                 x = (offset.x - size.x / 2).dp,
-                y = offset.y.dp
+                y = (offset.y - size.y / 2).dp
             )
             .scale(scale)
             .background(Theme[colors][surface], RoundedCornerShape(10.dp))
