@@ -1,11 +1,13 @@
 package io.github.seggan.glagolitsa.siril
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 enum class SirilCommand(val cmd: String) {
     AUTOSTRETCH("autostretch"),
     LOAD("load"),
+    RESAMPLE("resample"),
     SAVE_FITS("save"),
     SAVE_BMP("savebmp"),
     SAVE_JPG("savejpg"),
@@ -56,13 +58,19 @@ suspend fun callSiril(vararg commands: List<String>) {
             writer.write("requires 1.4.0")
             writer.newLine()
             for (command in commands) {
-                writer.write(command.joinToString(" ") { if (it.contains(' ')) "\"$it\"" else it })
+                val commandString = command.joinToString(" ") { if (it.contains(' ')) "\"$it\"" else it }
+                println(commandString)
+                writer.write(commandString)
                 writer.newLine()
             }
             writer.flush()
         }
+        launch {
+            proc.inputStream.use { it.copyTo(System.out) }
+        }
+        launch {
+            proc.errorStream.use { it.copyTo(System.err) }
+        }
         proc.waitFor()
-        proc.errorStream.use { it.copyTo(System.err) }
-        proc.inputStream.use { it.copyTo(System.out) }
     }
 }

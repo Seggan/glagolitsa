@@ -13,13 +13,14 @@ abstract class Node<N : Node<N>> {
         protected set
 
     val inPorts = mutableListOf<Port.Input<*>>()
-
     val outPorts = mutableListOf<Port.Output<*>>()
-
     val parameters = mutableListOf<Parameter<*>>()
+    val outputs = mutableListOf<Output<*>>()
 
     private fun flush() {
-        state = State.Idle
+        if (state !is State.Running) {
+            state = State.Idle
+        }
         for (out in outPorts) {
             out.flush()
             for (connected in out.connectedTo) {
@@ -58,6 +59,11 @@ abstract class Node<N : Node<N>> {
     protected operator fun <T> Parameter<T>.provideDelegate(thisRef: Any?, prop: kotlin.reflect.KProperty<*>): ReadOnlyProperty<Any?, T> {
         parameters.add(this)
         return ReadOnlyProperty { _, _ -> value }
+    }
+
+    protected operator fun <T> Output<T>.provideDelegate(thisRef: Any?, prop: kotlin.reflect.KProperty<*>): ReadOnlyProperty<Any?, Output<T>> {
+        outputs.add(this)
+        return ReadOnlyProperty { _, _ -> this }
     }
 
     sealed interface State {

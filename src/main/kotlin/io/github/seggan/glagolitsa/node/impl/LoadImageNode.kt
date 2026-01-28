@@ -43,7 +43,6 @@ class LoadImageNode : Node<LoadImageNode>() {
     companion object : Spec<LoadImageNode>() {
         override val id = "load-image"
         override val name = "Load Image"
-
         override fun construct() = LoadImageNode()
     }
 }

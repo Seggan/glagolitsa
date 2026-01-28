@@ -33,7 +33,6 @@ class SaveFitsNode : Node<SaveFitsNode>() {
     companion object : Spec<SaveFitsNode>() {
         override val id = "save-fits"
         override val name = "Save Image as FITS"
-
         override fun construct() = SaveFitsNode()
     }
 }

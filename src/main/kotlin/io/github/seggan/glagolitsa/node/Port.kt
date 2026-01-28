@@ -11,7 +11,7 @@ import kotlin.io.path.deleteIfExists
 sealed class Port<T>(val node: Node<*>) {
 
     sealed class Type<T>(val color: Color) {
-        data object Image : Type<Path>(Color(0xFFFFDD00))
+        data object Image : Type<Path>(Color(0xFFAA3838))
     }
 
     abstract val name: String

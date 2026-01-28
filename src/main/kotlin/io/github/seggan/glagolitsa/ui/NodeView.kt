@@ -33,15 +33,15 @@ import glagolitsa.generated.resources.play_arrow
 import glagolitsa.generated.resources.progress_activity
 import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.node.Port
-import io.github.seggan.glagolitsa.node.impl.AutoStretchNode
+import io.github.seggan.glagolitsa.node.impl.PreviewNode
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 private fun NodeViewPreview() = LightTheme {
     NodeView(
-        node = AutoStretchNode(),
+        node = PreviewNode(),
         offset = Offset(0f, 0f),
         scale = 1f
     )
@@ -69,7 +69,7 @@ fun NodeView(
                 y = offset.y.dp
             )
             .scale(scale)
-            .background(Theme[colors][background], RoundedCornerShape(10.dp))
+            .background(Theme[colors][surface], RoundedCornerShape(10.dp))
             .width(IntrinsicSize.Max)
             .height(IntrinsicSize.Min)
             .pointerInput(Unit) {
@@ -123,7 +123,6 @@ fun NodeView(
                             progress = nodeState.progress,
                             modifier = Modifier.size(24.dp),
                             shape = CircleShape,
-                            backgroundColor = Theme[colors][background],
                             contentColor = Color.Blue
                         ) {
                             TODO()
@@ -132,7 +131,6 @@ fun NodeView(
                         ProgressIndicator(
                             modifier = Modifier.size(24.dp),
                             shape = CircleShape,
-                            backgroundColor = Theme[colors][background],
                             contentColor = Color.Blue
                         ) {
                             val transition = rememberInfiniteTransition()
@@ -173,7 +171,7 @@ fun NodeView(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(5.dp)
-                ) { parameter.generate() }
+                ) { parameter.render() }
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -202,6 +200,20 @@ fun NodeView(
                             onDrag = onPortDrag
                         )
                     }
+                }
+            }
+
+            if (node.outputs.isNotEmpty()) {
+                HorizontalSeparator(
+                    modifier = Modifier
+                        .padding(vertical = 5.dp),
+                    color = Theme[colors][onBackground]
+                )
+                for (output in node.outputs) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(5.dp)
+                    ) { output.render() }
                 }
             }
 

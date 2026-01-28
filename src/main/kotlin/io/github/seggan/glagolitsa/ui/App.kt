@@ -21,6 +21,7 @@ import io.github.seggan.glagolitsa.node.Node
 import io.github.seggan.glagolitsa.node.Port
 import io.github.seggan.glagolitsa.node.impl.AutoStretchNode
 import io.github.seggan.glagolitsa.node.impl.LoadImageNode
+import io.github.seggan.glagolitsa.node.impl.PreviewNode
 import io.github.seggan.glagolitsa.node.impl.SaveFitsNode
 import io.github.seggan.glagolitsa.node.loadFromJson
 import io.github.seggan.glagolitsa.node.saveToJson
@@ -31,19 +32,22 @@ import io.github.vinceglb.filekit.dialogs.openFileSaver
 import io.github.vinceglb.filekit.toKotlinxIoPath
 import io.github.vinceglb.filekit.utils.toFile
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.json.Json
-import kotlin.coroutines.resume
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun App() = LightTheme {
-    val scope = rememberCoroutineScope()
-    var compositionNotifier: (() -> Unit)? by remember { mutableStateOf(null) }
+    var nodes by remember { mutableStateOf(mapOf<Node<*>, Offset>()) }
+    fun setNode(node: Node<*>, offset: Offset) {
+        nodes = nodes.toMutableMap().also {
+            it[node] = offset
+        }
+    }
 
-    val nodes = remember { mutableStateMapOf<Node<*>, Offset>() }
+    val scope = rememberCoroutineScope()
+
     var scale by remember { mutableStateOf(1f) }
 
     var currentlyConnectingPort by remember { mutableStateOf<Pair<Port<*>, Offset>?>(null) }
@@ -58,7 +62,7 @@ fun App() = LightTheme {
                 detectDragGestures { change, dragAmount ->
                     change.consume()
                     for ((node, offset) in nodes) {
-                        nodes[node] = offset + dragAmount
+                        setNode(node, offset + dragAmount)
                     }
                 }
             }
@@ -76,16 +80,17 @@ fun App() = LightTheme {
                         return newOffset
                     }
 
+                    val newNodes = nodes.toMutableMap()
                     for ((node, offset) in nodes) {
-                        nodes[node] = offset(offset)
+                        newNodes[node] = offset(offset)
                     }
+                    nodes = newNodes
 
                     change.consume()
                 }
             }
             .contextMenu(contextMenuState)
     ) {
-        compositionNotifier?.invoke()
         ContextMenu(contextMenuState) {
             ContextMenuItem(
                 text = { Text("Save Project") },
@@ -95,7 +100,7 @@ fun App() = LightTheme {
                             FileKit.openFileSaver(suggestedName = "project", extension = "json")?.toKotlinxIoPath()
                                 ?.toFile()?.toPath()
                         if (output != null) {
-                            val json = saveToJson(nodes)
+                            val json = saveToJson(scale, nodes)
                             output.writeText(json.toString())
                         }
                     }
@@ -108,15 +113,9 @@ fun App() = LightTheme {
                         val input = FileKit.openFilePicker(type = FileKitType.File("json"))?.toKotlinxIoPath()?.toFile()
                             ?.toPath()
                         if (input != null) {
-                            nodes.clear()
-                            // Wait for recomposition to finish clearing nodes, as it tends to reuse old NodeViews otherwise
-                            suspendCancellableCoroutine {
-                                compositionNotifier = {
-                                    it.resume(Unit)
-                                }
-                            }
-                            compositionNotifier = null
-                            loadFromJson(Json.parseToJsonElement(input.readText()), nodes)
+                            val parsed = loadFromJson(Json.parseToJsonElement(input.readText()))
+                            scale = parsed.first
+                            nodes = parsed.second
                         }
                     }
                 }
@@ -128,7 +127,7 @@ fun App() = LightTheme {
                     text = { Text(spec.name) },
                     onClick = {
                         val node = spec.construct()
-                        nodes[node] = (contextMenuState.status as ContextMenuState.Status.Open).position
+                        setNode(node, (contextMenuState.status as ContextMenuState.Status.Open).position)
                     }
                 )
             }
@@ -140,6 +139,7 @@ fun App() = LightTheme {
                 ContextSubmenu(text = { Text("Stretch") }) {
                     NodeButton(AutoStretchNode)
                 }
+                NodeButton(PreviewNode)
             }
         }
 
@@ -163,10 +163,12 @@ fun App() = LightTheme {
                         }
                         port.connectedTo.clear()
                     }
-                    nodes.remove(node)
+                    nodes = nodes.toMutableMap().also {
+                        it.remove(node)
+                    }
                 },
                 onDrag = { node, dragAmount ->
-                    nodes[node] = nodes[node]!! + dragAmount * scale
+                    setNode(node, nodes[node]!! + dragAmount * scale)
                 },
                 onPortDrag = onPortDrag@{ port, pointerRel ->
                     if (pointerRel != null) {

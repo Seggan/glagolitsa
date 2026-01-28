@@ -3,14 +3,12 @@ package io.github.seggan.glagolitsa.node
 import androidx.compose.ui.geometry.Offset
 import io.github.seggan.glagolitsa.node.impl.AutoStretchNode
 import io.github.seggan.glagolitsa.node.impl.LoadImageNode
+import io.github.seggan.glagolitsa.node.impl.PreviewNode
 import io.github.seggan.glagolitsa.node.impl.SaveFitsNode
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.*
 
-fun saveToJson(nodes: Map<Node<*>, Offset>): JsonElement {
+fun saveToJson(scale: Float, nodes: Map<Node<*>, Offset>): JsonElement {
     val nodeList = nodes.keys.toList()
     val savedNodes = mutableListOf<SavedNode>()
     for (node in nodeList) {
@@ -38,21 +36,28 @@ fun saveToJson(nodes: Map<Node<*>, Offset>): JsonElement {
             )
         )
     }
-    return Json.encodeToJsonElement(savedNodes)
+    val nodes = Json.encodeToJsonElement(savedNodes)
+    return buildJsonObject {
+        put("scale", scale)
+        put("nodes", nodes)
+    }
 }
 
 private val types = mapOf(
     AutoStretchNode.id to AutoStretchNode,
     LoadImageNode.id to LoadImageNode,
+    PreviewNode.id to PreviewNode,
     SaveFitsNode.id to SaveFitsNode,
 )
 
 fun loadFromJson(
-    jsonElement: JsonElement,
-    nodeOut: MutableMap<Node<*>, Offset>
-) {
-    val savedNodes = Json.decodeFromJsonElement<List<SavedNode>>(jsonElement)
+    jsonElement: JsonElement
+): Pair<Float, Map<Node<*>, Offset>> {
+    val obj = jsonElement.jsonObject
+    val scale = obj["scale"]!!.jsonPrimitive.float
+    val savedNodes = Json.decodeFromJsonElement<List<SavedNode>>(obj["nodes"]!!)
     val nodeList = mutableListOf<Node<*>>()
+    val nodeOut = mutableMapOf<Node<*>, Offset>()
     for (savedNode in savedNodes) {
         val spec = types[savedNode.id]
             ?: throw IllegalArgumentException("Unknown node type: ${savedNode.id}")
@@ -73,6 +78,7 @@ fun loadFromJson(
             }
         }
     }
+    return scale to nodeOut
 }
 
 @Serializable

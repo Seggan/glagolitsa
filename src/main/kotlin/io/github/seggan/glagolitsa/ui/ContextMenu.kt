@@ -50,7 +50,7 @@ fun ContextMenu(
             Column(
                 modifier = modifier
                     .shadow(2.dp, shape = shape)
-                    .background(color = Theme[colors][background], shape = shape)
+                    .background(color = Theme[colors][surface], shape = shape)
                     .border(Dp.Hairline, color = Theme[colors][outline], shape = shape)
                     .padding(5.dp)
                     .width(IntrinsicSize.Max)
@@ -106,7 +106,7 @@ fun ContextMenuScope.ContextMenuItem(
             rootState.status = ContextMenuState.Status.Closed
         },
         modifier = modifier
-            .background(color = Theme[colors][background], shape = RoundedCornerShape(1.dp))
+            .background(color = Theme[colors][surface], shape = RoundedCornerShape(1.dp))
             .padding(1.dp)
             .fillMaxWidth()
     ) {
